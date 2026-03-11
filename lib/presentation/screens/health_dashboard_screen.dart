@@ -43,7 +43,24 @@ class _HealthDashboardScreenState extends State<HealthDashboardScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Health Dashboard'), centerTitle: true),
+      appBar: AppBar(
+        title: const Text('Health Dashboard'),
+        centerTitle: true,
+        actions: [
+          BlocBuilder<HealthCubit, HealthState>(
+            buildWhen: (prev, curr) => prev.isSyncActive != curr.isSyncActive,
+            builder: (context, state) {
+              return Tooltip(
+                message: state.isSyncActive ? 'Background sync active' : 'Background sync inactive',
+                child: Padding(
+                  padding: const EdgeInsets.only(right: 12),
+                  child: Icon(Icons.sync_rounded, color: state.isSyncActive ? Colors.green : Colors.grey),
+                ),
+              );
+            },
+          ),
+        ],
+      ),
       body: BlocBuilder<HealthCubit, HealthState>(
         builder: (context, state) {
           return RefreshIndicator(
@@ -145,6 +162,13 @@ class _HealthDashboardScreenState extends State<HealthDashboardScreen> {
     return [
       MetricCard(
         icon: Icons.directions_walk_rounded,
+        label: 'Steps',
+        value: _formatSteps(summary.totalSteps),
+        unit: 'steps',
+        iconColor: Colors.blue,
+      ),
+      MetricCard(
+        icon: Icons.route_rounded,
         label: 'Walking / Running',
         value: _formatDistance(summary.totalDistanceMeters),
         unit: summary.totalDistanceMeters >= 1000 ? 'km' : 'm',
@@ -204,6 +228,14 @@ class _HealthDashboardScreenState extends State<HealthDashboardScreen> {
   // ──────────────────────────────────────────────────────────────────────────
   // Formatters
   // ──────────────────────────────────────────────────────────────────────────
+
+  /// Formats a step count with commas for readability.
+  String _formatSteps(int steps) {
+    if (steps >= 1000) {
+      return '${(steps / 1000).toStringAsFixed(1)}k';
+    }
+    return steps.toString();
+  }
 
   /// Formats a distance in metres – switches to km when ≥ 1 000m.
   String _formatDistance(double metres) {

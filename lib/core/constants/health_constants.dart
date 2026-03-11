@@ -13,6 +13,7 @@ import 'package:health/health.dart';
 /// Uses types available on Google Health Connect – e.g. DISTANCE_DELTA
 /// instead of the iOS‑only DISTANCE_WALKING_RUNNING.
 const List<HealthDataType> kHealthDataTypesAndroid = [
+  HealthDataType.STEPS,
   HealthDataType.DISTANCE_DELTA,
   HealthDataType.WORKOUT,
   HealthDataType.HEART_RATE,
@@ -23,6 +24,7 @@ const List<HealthDataType> kHealthDataTypesAndroid = [
 
 /// HealthKit (iOS) data types.
 const List<HealthDataType> kHealthDataTypesIOS = [
+  HealthDataType.STEPS,
   HealthDataType.DISTANCE_WALKING_RUNNING,
   HealthDataType.EXERCISE_TIME,
   HealthDataType.HEART_RATE,

@@ -44,6 +44,8 @@ class HealthState {
     this.customStart,
     this.customEnd,
     this.healthConnectStatus,
+    this.isSyncActive = false,
+    this.syncError,
   });
 
   final HealthScreenStatus status;
@@ -54,6 +56,12 @@ class HealthState {
   final DateTime? customEnd;
   final HealthConnectStatus? healthConnectStatus;
 
+  /// Whether Open Wearables background sync is running.
+  final bool isSyncActive;
+
+  /// Last sync-related error message, if any.
+  final String? syncError;
+
   /// Immutable copy helper.
   HealthState copyWith({
     HealthScreenStatus? status,
@@ -63,6 +71,8 @@ class HealthState {
     DateTime? customStart,
     DateTime? customEnd,
     HealthConnectStatus? healthConnectStatus,
+    bool? isSyncActive,
+    String? syncError,
   }) {
     return HealthState(
       status: status ?? this.status,
@@ -72,6 +82,8 @@ class HealthState {
       customStart: customStart ?? this.customStart,
       customEnd: customEnd ?? this.customEnd,
       healthConnectStatus: healthConnectStatus ?? this.healthConnectStatus,
+      isSyncActive: isSyncActive ?? this.isSyncActive,
+      syncError: syncError,
     );
   }
 }

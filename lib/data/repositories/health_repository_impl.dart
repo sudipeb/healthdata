@@ -117,6 +117,7 @@ class HealthRepositoryImpl implements HealthRepository {
 
   /// Reduces a list of raw [HealthDataPoint]s into a single [HealthSummary].
   HealthSummary _aggregate(List<HealthDataPoint> points, DateTime start, DateTime end) {
+    int totalSteps = 0;
     double totalDistance = 0;
     double totalExerciseMinutes = 0;
     double totalCalories = 0;
@@ -133,6 +134,10 @@ class HealthRepositoryImpl implements HealthRepository {
       final numericValue = _extractNumericValue(point);
 
       switch (point.type) {
+        // Steps (both platforms)
+        case HealthDataType.STEPS:
+          totalSteps += (numericValue ?? 0).round();
+
         // Distance (iOS: DISTANCE_WALKING_RUNNING, Android: DISTANCE_DELTA)
         case HealthDataType.DISTANCE_WALKING_RUNNING:
         case HealthDataType.DISTANCE_DELTA:
@@ -184,6 +189,7 @@ class HealthRepositoryImpl implements HealthRepository {
     final avgHrv = hrvValues.isEmpty ? null : hrvValues.reduce((a, b) => a + b) / hrvValues.length;
 
     return HealthSummary(
+      totalSteps: totalSteps,
       totalDistanceMeters: totalDistance,
       totalExerciseTime: Duration(minutes: totalExerciseMinutes.round()),
       averageHeartRate: avgHr,

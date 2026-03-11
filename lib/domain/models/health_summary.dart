@@ -9,6 +9,7 @@ library;
 
 class HealthSummary {
   const HealthSummary({
+    required this.totalSteps,
     required this.totalDistanceMeters,
     required this.totalExerciseTime,
     required this.averageHeartRate,
@@ -20,6 +21,9 @@ class HealthSummary {
     required this.startDate,
     required this.endDate,
   });
+
+  /// Total step count.
+  final int totalSteps;
 
   /// Total walking / running distance in **metres**.
   final double totalDistanceMeters;
@@ -54,6 +58,7 @@ class HealthSummary {
   /// Convenience – creates an empty summary for a given range.
   factory HealthSummary.empty({required DateTime startDate, required DateTime endDate}) {
     return HealthSummary(
+      totalSteps: 0,
       totalDistanceMeters: 0,
       totalExerciseTime: Duration.zero,
       averageHeartRate: null,
@@ -69,6 +74,7 @@ class HealthSummary {
 
   /// Returns `true` when every numeric field is zero / null.
   bool get isEmpty =>
+      totalSteps == 0 &&
       totalDistanceMeters == 0 &&
       totalExerciseTime == Duration.zero &&
       averageHeartRate == null &&

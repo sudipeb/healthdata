@@ -12,15 +12,17 @@ library;
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../core/utils/logger.dart';
+import '../../data/services/open_wearables_service.dart';
 import '../../domain/models/date_range_option.dart';
 import '../../domain/models/health_summary.dart';
 import '../../domain/repositories/health_repository.dart';
 import 'health_state.dart';
 
 class HealthCubit extends Cubit<HealthState> {
-  HealthCubit(this._repository) : super(const HealthState());
+  HealthCubit(this._repository, {this.openWearablesService}) : super(const HealthState());
 
   final HealthRepository _repository;
+  final OpenWearablesService? openWearablesService;
 
   // ──────────────────────────────────────────────────────────────────────────
   // Public API
@@ -67,6 +69,9 @@ class HealthCubit extends Cubit<HealthState> {
 
     // 3. Fetch data for the currently selected range.
     await fetchData();
+
+    // 4. Start Open Wearables background sync if service is configured.
+    await _startOpenWearablesSync();
   }
 
   /// Re‑requests permissions and then fetches data.
@@ -141,5 +146,66 @@ class HealthCubit extends Cubit<HealthState> {
       final empty = HealthSummary.empty(startDate: start, endDate: end);
       emit(state.copyWith(status: HealthScreenStatus.loaded, summary: empty));
     }
+  }
+
+  // ──────────────────────────────────────────────────────────────────────────
+  // Open Wearables background sync
+  // ──────────────────────────────────────────────────────────────────────────
+
+  /// Connects to the Open Wearables SDK with the given credentials and starts
+  /// background sync from Health Connect / Google Fit.
+  Future<void> connectOpenWearables({
+    required String userId,
+    required String accessToken,
+    required String refreshToken,
+  }) async {
+    final service = openWearablesService;
+    if (service == null) return;
+
+    try {
+      await service.connect(userId: userId, accessToken: accessToken, refreshToken: refreshToken);
+      emit(state.copyWith(isSyncActive: service.isSyncActive));
+    } catch (e, st) {
+      appLogger.warning('Open Wearables connect failed', e, st);
+      emit(state.copyWith(syncError: e.toString()));
+    }
+  }
+
+  /// Disconnects from the Open Wearables SDK and stops background sync.
+  Future<void> disconnectOpenWearables() async {
+    final service = openWearablesService;
+    if (service == null) return;
+
+    try {
+      await service.disconnect();
+      emit(state.copyWith(isSyncActive: false));
+    } catch (e, st) {
+      appLogger.warning('Open Wearables disconnect failed', e, st);
+    }
+  }
+
+  /// Tries to start background sync if the SDK was previously configured and
+  /// has a restored session.
+  Future<void> _startOpenWearablesSync() async {
+    final service = openWearablesService;
+    if (service == null) return;
+
+    // If session was already restored during init, just start sync.
+    if (service.isSignedIn && !service.isSyncActive) {
+      try {
+        await service.syncNow();
+        emit(state.copyWith(isSyncActive: service.isSyncActive));
+      } catch (e) {
+        appLogger.warning('Open Wearables auto-sync failed: $e');
+      }
+    } else {
+      emit(state.copyWith(isSyncActive: service.isSyncActive));
+    }
+  }
+
+  @override
+  Future<void> close() {
+    openWearablesService?.dispose();
+    return super.close();
   }
 }
