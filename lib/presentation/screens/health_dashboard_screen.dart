@@ -160,6 +160,7 @@ class _HealthDashboardScreenState extends State<HealthDashboardScreen> {
 
   List<Widget> _buildMetricCards(HealthSummary summary) {
     return [
+      // Activity
       MetricCard(
         icon: Icons.directions_walk_rounded,
         label: 'Steps',
@@ -169,10 +170,31 @@ class _HealthDashboardScreenState extends State<HealthDashboardScreen> {
       ),
       MetricCard(
         icon: Icons.route_rounded,
-        label: 'Walking / Running',
+        label: 'Walk / Run Distance',
         value: _formatDistance(summary.totalDistanceMeters),
         unit: summary.totalDistanceMeters >= 1000 ? 'km' : 'm',
         iconColor: Colors.orange,
+      ),
+      MetricCard(
+        icon: Icons.directions_bike_rounded,
+        label: 'Cycling Distance',
+        value: _formatDistance(summary.totalCyclingDistanceMeters),
+        unit: summary.totalCyclingDistanceMeters >= 1000 ? 'km' : 'm',
+        iconColor: Colors.amber,
+      ),
+      MetricCard(
+        icon: Icons.local_fire_department_rounded,
+        label: 'Active Energy',
+        value: summary.totalActiveEnergyBurned.toStringAsFixed(0),
+        unit: 'cal',
+        iconColor: Colors.deepOrange,
+      ),
+      MetricCard(
+        icon: Icons.whatshot_rounded,
+        label: 'Basal Energy',
+        value: summary.totalBasalEnergyBurned.toStringAsFixed(0),
+        unit: 'cal',
+        iconColor: Colors.orange.shade800,
       ),
       MetricCard(
         icon: Icons.timer_outlined,
@@ -180,12 +202,21 @@ class _HealthDashboardScreenState extends State<HealthDashboardScreen> {
         value: _formatDuration(summary.totalExerciseTime),
         iconColor: Colors.green,
       ),
+
+      // Heart & Vitals
       MetricCard(
         icon: Icons.favorite_rounded,
         label: 'Avg Heart Rate',
         value: summary.averageHeartRate?.toStringAsFixed(0) ?? '—',
         unit: summary.averageHeartRate != null ? 'bpm' : '',
         iconColor: Colors.red,
+      ),
+      MetricCard(
+        icon: Icons.favorite_border_rounded,
+        label: 'Resting Heart Rate',
+        value: summary.averageRestingHeartRate?.toStringAsFixed(0) ?? '—',
+        unit: summary.averageRestingHeartRate != null ? 'bpm' : '',
+        iconColor: Colors.red.shade300,
       ),
       MetricCard(
         icon: Icons.show_chart_rounded,
@@ -195,11 +226,65 @@ class _HealthDashboardScreenState extends State<HealthDashboardScreen> {
         iconColor: Colors.purple,
       ),
       MetricCard(
-        icon: Icons.local_fire_department_rounded,
+        icon: Icons.monitor_heart_rounded,
+        label: 'Blood Pressure',
+        value: summary.averageBloodPressureSystolic != null
+            ? '${summary.averageBloodPressureSystolic!.toStringAsFixed(0)}/${summary.averageBloodPressureDiastolic?.toStringAsFixed(0) ?? "—"}'
+            : '—',
+        unit: summary.averageBloodPressureSystolic != null ? 'mmHg' : '',
+        iconColor: Colors.red.shade700,
+      ),
+      MetricCard(
+        icon: Icons.air_rounded,
+        label: 'Respiratory Rate',
+        value: summary.averageRespiratoryRate?.toStringAsFixed(1) ?? '—',
+        unit: summary.averageRespiratoryRate != null ? 'br/min' : '',
+        iconColor: Colors.cyan,
+      ),
+
+      // Body Measurements
+      MetricCard(
+        icon: Icons.height_rounded,
+        label: 'Height',
+        value: summary.latestHeight?.toStringAsFixed(2) ?? '—',
+        unit: summary.latestHeight != null ? 'm' : '',
+        iconColor: Colors.indigo,
+      ),
+      MetricCard(
+        icon: Icons.fitness_center_rounded,
+        label: 'Lean Body Mass',
+        value: summary.latestLeanBodyMass?.toStringAsFixed(1) ?? '—',
+        unit: summary.latestLeanBodyMass != null ? 'kg' : '',
+        iconColor: Colors.brown,
+      ),
+
+      // Sleep
+      MetricCard(
+        icon: Icons.bedtime_rounded,
+        label: 'Sleep (Asleep)',
+        value: _formatMinutes(summary.totalSleepAsleepMinutes),
+        iconColor: Colors.indigo.shade300,
+      ),
+      MetricCard(
+        icon: Icons.bed_rounded,
+        label: 'Sleep (In Bed)',
+        value: _formatMinutes(summary.totalSleepInBedMinutes),
+        iconColor: Colors.indigo.shade200,
+      ),
+      MetricCard(
+        icon: Icons.visibility_rounded,
+        label: 'Sleep (Awake)',
+        value: _formatMinutes(summary.totalSleepAwakeMinutes),
+        iconColor: Colors.indigo.shade100,
+      ),
+
+      // Nutrition
+      MetricCard(
+        icon: Icons.restaurant_rounded,
         label: 'Calories Consumed',
         value: summary.totalCaloriesConsumed.toStringAsFixed(0),
         unit: 'kcal',
-        iconColor: Colors.deepOrange,
+        iconColor: Colors.deepOrange.shade300,
       ),
       MetricCard(
         icon: Icons.icecream_outlined,
@@ -221,6 +306,27 @@ class _HealthDashboardScreenState extends State<HealthDashboardScreen> {
         value: summary.totalFiberGrams.toStringAsFixed(1),
         unit: 'g',
         iconColor: Colors.teal,
+      ),
+
+      // Other
+      MetricCard(
+        icon: Icons.bloodtype_rounded,
+        label: 'Blood Glucose',
+        value: summary.averageBloodGlucose?.toStringAsFixed(1) ?? '—',
+        unit: summary.averageBloodGlucose != null ? 'mg/dL' : '',
+        iconColor: Colors.red.shade900,
+      ),
+      MetricCard(
+        icon: Icons.self_improvement_rounded,
+        label: 'Mindfulness',
+        value: _formatMinutes(summary.totalMindfulnessMinutes),
+        iconColor: Colors.lightBlue,
+      ),
+      MetricCard(
+        icon: Icons.water_drop_rounded,
+        label: 'Menstruation',
+        value: summary.hasMenstruationFlow ? 'Recorded' : '—',
+        iconColor: Colors.pink.shade300,
       ),
     ];
   }
@@ -250,6 +356,15 @@ class _HealthDashboardScreenState extends State<HealthDashboardScreen> {
     if (d.inMinutes == 0) return '0m';
     final hours = d.inHours;
     final minutes = d.inMinutes.remainder(60);
+    if (hours > 0) return '${hours}h ${minutes}m';
+    return '${minutes}m';
+  }
+
+  /// Formats raw minutes as `Xh Ym` or `Ym`.
+  String _formatMinutes(double totalMinutes) {
+    if (totalMinutes == 0) return '0m';
+    final hours = totalMinutes ~/ 60;
+    final minutes = (totalMinutes % 60).round();
     if (hours > 0) return '${hours}h ${minutes}m';
     return '${minutes}m';
   }

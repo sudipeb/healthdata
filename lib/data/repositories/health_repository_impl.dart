@@ -119,18 +119,34 @@ class HealthRepositoryImpl implements HealthRepository {
   HealthSummary _aggregate(List<HealthDataPoint> points, DateTime start, DateTime end) {
     int totalSteps = 0;
     double totalDistance = 0;
+    double totalCyclingDistance = 0;
+    double totalActiveEnergy = 0;
+    double totalBasalEnergy = 0;
     double totalExerciseMinutes = 0;
     double totalCalories = 0;
     double totalSugar = 0;
     double totalSodium = 0;
     double totalFiber = 0;
+    double totalSleepAsleep = 0;
+    double totalSleepInBed = 0;
+    double totalSleepAwake = 0;
+    double totalMindfulness = 0;
+    bool hasMenstruation = false;
 
     final heartRateValues = <double>[];
+    final restingHeartRateValues = <double>[];
     final hrvValues = <double>[];
+    final systolicValues = <double>[];
+    final diastolicValues = <double>[];
+    final respiratoryRateValues = <double>[];
+    final bloodGlucoseValues = <double>[];
+
+    double? latestHeight;
+    DateTime? latestHeightDate;
+    double? latestLeanBodyMass;
+    DateTime? latestLeanBodyMassDate;
 
     for (final point in points) {
-      // The SDK wraps values in a HealthValue hierarchy.  For numeric types
-      // we resolve to double via NumericHealthValue.
       final numericValue = _extractNumericValue(point);
 
       switch (point.type) {
@@ -138,26 +154,77 @@ class HealthRepositoryImpl implements HealthRepository {
         case HealthDataType.STEPS:
           totalSteps += (numericValue ?? 0).round();
 
-        // Distance (iOS: DISTANCE_WALKING_RUNNING, Android: DISTANCE_DELTA)
+        // Distance – walking/running (iOS: DISTANCE_WALKING_RUNNING, Android: DISTANCE_DELTA)
         case HealthDataType.DISTANCE_WALKING_RUNNING:
         case HealthDataType.DISTANCE_DELTA:
           totalDistance += numericValue ?? 0;
+
+        // Distance – cycling
+        case HealthDataType.DISTANCE_CYCLING:
+          totalCyclingDistance += numericValue ?? 0;
+
+        // Active energy burned (both platforms)
+        case HealthDataType.ACTIVE_ENERGY_BURNED:
+          totalActiveEnergy += numericValue ?? 0;
+
+        // Basal energy burned (both platforms)
+        case HealthDataType.BASAL_ENERGY_BURNED:
+          totalBasalEnergy += numericValue ?? 0;
 
         // Exercise time (iOS: EXERCISE_TIME, Android: via WORKOUT duration)
         case HealthDataType.EXERCISE_TIME:
           totalExerciseMinutes += numericValue ?? 0;
         case HealthDataType.WORKOUT:
-          // Workout duration is end‑start in minutes
           totalExerciseMinutes += point.dateTo.difference(point.dateFrom).inMinutes;
 
         // Heart rate (both platforms)
         case HealthDataType.HEART_RATE:
           if (numericValue != null) heartRateValues.add(numericValue);
 
+        // Resting heart rate (both platforms)
+        case HealthDataType.RESTING_HEART_RATE:
+          if (numericValue != null) restingHeartRateValues.add(numericValue);
+
         // HRV (iOS: SDNN, Android: RMSSD)
         case HealthDataType.HEART_RATE_VARIABILITY_SDNN:
         case HealthDataType.HEART_RATE_VARIABILITY_RMSSD:
           if (numericValue != null) hrvValues.add(numericValue);
+
+        // Blood pressure
+        case HealthDataType.BLOOD_PRESSURE_SYSTOLIC:
+          if (numericValue != null) systolicValues.add(numericValue);
+        case HealthDataType.BLOOD_PRESSURE_DIASTOLIC:
+          if (numericValue != null) diastolicValues.add(numericValue);
+
+        // Respiratory rate
+        case HealthDataType.RESPIRATORY_RATE:
+          if (numericValue != null) respiratoryRateValues.add(numericValue);
+
+        // Height – keep latest reading
+        case HealthDataType.HEIGHT:
+          if (numericValue != null) {
+            if (latestHeightDate == null || point.dateTo.isAfter(latestHeightDate)) {
+              latestHeight = numericValue;
+              latestHeightDate = point.dateTo;
+            }
+          }
+
+        // Lean body mass – keep latest reading
+        case HealthDataType.LEAN_BODY_MASS:
+          if (numericValue != null) {
+            if (latestLeanBodyMassDate == null || point.dateTo.isAfter(latestLeanBodyMassDate)) {
+              latestLeanBodyMass = numericValue;
+              latestLeanBodyMassDate = point.dateTo;
+            }
+          }
+
+        // Sleep
+        case HealthDataType.SLEEP_ASLEEP:
+          totalSleepAsleep += numericValue ?? 0;
+        case HealthDataType.SLEEP_IN_BED:
+          totalSleepInBed += numericValue ?? 0;
+        case HealthDataType.SLEEP_AWAKE:
+          totalSleepAwake += numericValue ?? 0;
 
         // Calories (iOS: DIETARY_ENERGY_CONSUMED, Android: TOTAL_CALORIES_BURNED)
         case HealthDataType.DIETARY_ENERGY_CONSUMED:
@@ -170,7 +237,6 @@ class HealthRepositoryImpl implements HealthRepository {
             totalSugar += sugar;
             totalSodium += sodium;
             totalFiber += fiber;
-            // calories may also come from nutrition records
           });
         case HealthDataType.DIETARY_SUGAR:
           totalSugar += numericValue ?? 0;
@@ -179,25 +245,50 @@ class HealthRepositoryImpl implements HealthRepository {
         case HealthDataType.DIETARY_FIBER:
           totalFiber += numericValue ?? 0;
 
+        // Blood glucose
+        case HealthDataType.BLOOD_GLUCOSE:
+          if (numericValue != null) bloodGlucoseValues.add(numericValue);
+
+        // Mindfulness (iOS only)
+        case HealthDataType.MINDFULNESS:
+          totalMindfulness += numericValue ?? 0;
+
+        // Menstruation flow
+        case HealthDataType.MENSTRUATION_FLOW:
+          hasMenstruation = true;
+
         default:
           break;
       }
     }
 
-    final avgHr = heartRateValues.isEmpty ? null : heartRateValues.reduce((a, b) => a + b) / heartRateValues.length;
-
-    final avgHrv = hrvValues.isEmpty ? null : hrvValues.reduce((a, b) => a + b) / hrvValues.length;
+    double? average(List<double> values) => values.isEmpty ? null : values.reduce((a, b) => a + b) / values.length;
 
     return HealthSummary(
       totalSteps: totalSteps,
       totalDistanceMeters: totalDistance,
+      totalCyclingDistanceMeters: totalCyclingDistance,
+      totalActiveEnergyBurned: totalActiveEnergy,
+      totalBasalEnergyBurned: totalBasalEnergy,
       totalExerciseTime: Duration(minutes: totalExerciseMinutes.round()),
-      averageHeartRate: avgHr,
-      averageHrvSdnn: avgHrv,
+      averageHeartRate: average(heartRateValues),
+      averageRestingHeartRate: average(restingHeartRateValues),
+      averageHrvSdnn: average(hrvValues),
+      averageBloodPressureSystolic: average(systolicValues),
+      averageBloodPressureDiastolic: average(diastolicValues),
+      averageRespiratoryRate: average(respiratoryRateValues),
+      latestHeight: latestHeight,
+      latestLeanBodyMass: latestLeanBodyMass,
+      totalSleepAsleepMinutes: totalSleepAsleep,
+      totalSleepInBedMinutes: totalSleepInBed,
+      totalSleepAwakeMinutes: totalSleepAwake,
       totalCaloriesConsumed: totalCalories,
       totalSugarGrams: totalSugar,
       totalSodiumGrams: totalSodium,
       totalFiberGrams: totalFiber,
+      averageBloodGlucose: average(bloodGlucoseValues),
+      totalMindfulnessMinutes: totalMindfulness,
+      hasMenstruationFlow: hasMenstruation,
       startDate: start,
       endDate: end,
     );
