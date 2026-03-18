@@ -9,20 +9,25 @@
 /// ──────────────────────────────────────────────────────────────────────────────
 library;
 
+import 'dart:async';
+
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../core/utils/logger.dart';
-import '../../data/services/open_wearables_service.dart';
+import '../../data/services/background_health_service.dart';
 import '../../domain/models/date_range_option.dart';
 import '../../domain/models/health_summary.dart';
 import '../../domain/repositories/health_repository.dart';
 import 'health_state.dart';
 
 class HealthCubit extends Cubit<HealthState> {
-  HealthCubit(this._repository, {this.openWearablesService}) : super(const HealthState());
+  HealthCubit(this._repository, {BackgroundHealthService? backgroundHealthService})
+      : _backgroundHealthService = backgroundHealthService ?? BackgroundHealthService(),
+        super(const HealthState());
 
   final HealthRepository _repository;
-  final OpenWearablesService? openWearablesService;
+  final BackgroundHealthService _backgroundHealthService;
+  StreamSubscription<HealthSummary>? _bgSubscription;
 
   // ──────────────────────────────────────────────────────────────────────────
   // Public API
@@ -70,8 +75,8 @@ class HealthCubit extends Cubit<HealthState> {
     // 3. Fetch data for the currently selected range.
     await fetchData();
 
-    // 4. Start Open Wearables background sync if service is configured.
-    await _startOpenWearablesSync();
+    // 4. Start background health sync.
+    _startBackgroundSync();
   }
 
   /// Re‑requests permissions and then fetches data.
@@ -149,63 +154,31 @@ class HealthCubit extends Cubit<HealthState> {
   }
 
   // ──────────────────────────────────────────────────────────────────────────
-  // Open Wearables background sync
+  // Background health sync
   // ──────────────────────────────────────────────────────────────────────────
 
-  /// Connects to the Open Wearables SDK with the given credentials and starts
-  /// background sync from Health Connect / Google Fit.
-  Future<void> connectOpenWearables({
-    required String userId,
-    required String accessToken,
-    required String refreshToken,
-  }) async {
-    final service = openWearablesService;
-    if (service == null) return;
+  /// Starts [BackgroundHealthService] and refreshes the displayed summary
+  /// whenever a new background snapshot arrives.
+  void _startBackgroundSync() {
+    _backgroundHealthService.start();
+    emit(state.copyWith(isSyncActive: true));
 
-    try {
-      await service.connect(userId: userId, accessToken: accessToken, refreshToken: refreshToken);
-      emit(state.copyWith(isSyncActive: service.isSyncActive));
-    } catch (e, st) {
-      appLogger.warning('Open Wearables connect failed', e, st);
-      emit(state.copyWith(syncError: e.toString()));
-    }
-  }
-
-  /// Disconnects from the Open Wearables SDK and stops background sync.
-  Future<void> disconnectOpenWearables() async {
-    final service = openWearablesService;
-    if (service == null) return;
-
-    try {
-      await service.disconnect();
-      emit(state.copyWith(isSyncActive: false));
-    } catch (e, st) {
-      appLogger.warning('Open Wearables disconnect failed', e, st);
-    }
-  }
-
-  /// Tries to start background sync if the SDK was previously configured and
-  /// has a restored session.
-  Future<void> _startOpenWearablesSync() async {
-    final service = openWearablesService;
-    if (service == null) return;
-
-    // If session was already restored during init, just start sync.
-    if (service.isSignedIn && !service.isSyncActive) {
-      try {
-        await service.syncNow();
-        emit(state.copyWith(isSyncActive: service.isSyncActive));
-      } catch (e) {
-        appLogger.warning('Open Wearables auto-sync failed: $e');
-      }
-    } else {
-      emit(state.copyWith(isSyncActive: service.isSyncActive));
-    }
+    _bgSubscription = _backgroundHealthService.dataStream.listen(
+      (summary) {
+        appLogger.info('Background sync delivered fresh data');
+        // Only update the summary; keep the current screen status intact.
+        if (!isClosed) emit(state.copyWith(summary: summary));
+      },
+      onError: (Object e) {
+        appLogger.warning('Background sync stream error: $e');
+      },
+    );
   }
 
   @override
   Future<void> close() {
-    openWearablesService?.dispose();
+    _bgSubscription?.cancel();
+    _backgroundHealthService.dispose();
     return super.close();
   }
 }

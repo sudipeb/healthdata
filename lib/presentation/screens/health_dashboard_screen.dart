@@ -338,7 +338,13 @@ class _HealthDashboardScreenState extends State<HealthDashboardScreen> {
   /// Formats a step count with commas for readability.
   String _formatSteps(int steps) {
     if (steps >= 1000) {
-      return '${(steps / 1000).toStringAsFixed(1)}k';
+      final str = steps.toString();
+      final buffer = StringBuffer();
+      for (var i = 0; i < str.length; i++) {
+        if (i > 0 && (str.length - i) % 3 == 0) buffer.write(',');
+        buffer.write(str[i]);
+      }
+      return buffer.toString();
     }
     return steps.toString();
   }

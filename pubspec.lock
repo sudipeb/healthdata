@@ -240,14 +240,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.0.0"
-  open_wearables_health_sdk:
-    dependency: "direct main"
-    description:
-      name: open_wearables_health_sdk
-      sha256: d464406f04e2996145b3848f58eb730dfc9b9d53e21275e6f484e4e507dc9e36
-      url: "https://pub.dev"
-    source: hosted
-    version: "0.0.12"
   path:
     dependency: transitive
     description:
