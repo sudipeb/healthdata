@@ -59,6 +59,11 @@ class _HealthDashboardScreenState extends State<HealthDashboardScreen> {
               );
             },
           ),
+          IconButton(
+            tooltip: 'Delete step data for selected range',
+            icon: const Icon(Icons.delete_outline_rounded),
+            onPressed: () => _confirmAndDeleteSteps(context),
+          ),
         ],
       ),
       body: BlocBuilder<HealthCubit, HealthState>(
@@ -152,6 +157,33 @@ class _HealthDashboardScreenState extends State<HealthDashboardScreen> {
           ),
       ],
     );
+  }
+
+  Future<void> _confirmAndDeleteSteps(BuildContext context) async {
+    final shouldDelete =
+        await showDialog<bool>(
+          context: context,
+          builder: (context) {
+            return AlertDialog(
+              title: const Text('Delete Step Data'),
+              content: const Text('Delete steps for the currently selected date range? This action cannot be undone.'),
+              actions: [
+                TextButton(onPressed: () => Navigator.of(context).pop(false), child: const Text('Cancel')),
+                FilledButton(onPressed: () => Navigator.of(context).pop(true), child: const Text('Delete')),
+              ],
+            );
+          },
+        ) ??
+        false;
+
+    if (!shouldDelete || !context.mounted) return;
+
+    final success = await context.read<HealthCubit>().deleteStepsInSelectedRange();
+    if (!context.mounted) return;
+
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(success ? 'Step data deleted.' : 'Failed to delete step data.')));
   }
 
   // ──────────────────────────────────────────────────────────────────────────

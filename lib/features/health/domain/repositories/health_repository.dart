@@ -35,4 +35,8 @@ abstract class HealthRepository {
 
   /// Fetch aggregated health data for the given [start]–[end] window.
   Future<HealthSummary> fetchHealthData({required DateTime start, required DateTime end});
+
+  /// Deletes step data for the given [start]–[end] window.
+  /// Returns `true` when the platform reports successful deletion.
+  Future<bool> deleteStepsData({required DateTime start, required DateTime end});
 }

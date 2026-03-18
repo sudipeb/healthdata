@@ -122,6 +122,18 @@ class HealthCubit extends Cubit<HealthState> {
     await fetchData();
   }
 
+  /// Deletes step data in the currently selected date range and refreshes data.
+  Future<bool> deleteStepsInSelectedRange() async {
+    final (start, end) = _resolveDateRange();
+    final deleted = await _repository.deleteStepsData(start: start, end: end);
+
+    if (deleted) {
+      await fetchData();
+    }
+
+    return deleted;
+  }
+
   // ──────────────────────────────────────────────────────────────────────────
   // Helpers
   // ──────────────────────────────────────────────────────────────────────────

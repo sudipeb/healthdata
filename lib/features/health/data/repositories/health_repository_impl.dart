@@ -16,6 +16,7 @@ library;
 
 import 'dart:io' show Platform;
 
+import 'package:flutter/foundation.dart';
 import 'package:health/health.dart';
 import 'package:healthdata/core/constants/health_constants.dart';
 import 'package:healthdata/core/utils/logger.dart';
@@ -66,7 +67,7 @@ class HealthRepositoryImpl implements HealthRepository {
   Future<bool> requestPermissions() async {
     try {
       final types = _platformTypes;
-      final perms = types.map((_) => HealthDataAccess.READ).toList();
+      final perms = _platformAccesses;
       final granted = await _health.requestAuthorization(types, permissions: perms);
       appLogger.info('Permissions granted: $granted');
       return granted;
@@ -80,7 +81,7 @@ class HealthRepositoryImpl implements HealthRepository {
   Future<bool> hasPermissions() async {
     try {
       final types = _platformTypes;
-      final perms = types.map((_) => HealthDataAccess.READ).toList();
+      final perms = _platformAccesses;
       final result = await _health.hasPermissions(types, permissions: perms);
       appLogger.info('Has permissions: $result');
       return result ?? false;
@@ -111,6 +112,20 @@ class HealthRepositoryImpl implements HealthRepository {
     } catch (e, st) {
       appLogger.severe('fetchHealthData failed', e, st);
       throw Exception('Failed to fetch health data: $e');
+    }
+  }
+
+  @override
+  Future<bool> deleteStepsData({required DateTime start, required DateTime end}) async {
+    appLogger.info('Deleting step data from $start to $end');
+
+    try {
+      final success = await _health.delete(type: HealthDataType.STEPS, startTime: start, endTime: end);
+      appLogger.info('Step data delete success: $success');
+      return success;
+    } catch (e, st) {
+      appLogger.severe('deleteStepsData failed', e, st);
+      return false;
     }
   }
 
@@ -146,6 +161,17 @@ class HealthRepositoryImpl implements HealthRepository {
     DateTime? latestLeanBodyMassDate;
 
     for (final point in points) {
+      if (kDebugMode) {
+        appLogger.info(
+          'Health point source - type: ${point.type}, '
+          'sourcePlatform: ${point.sourcePlatform}, '
+          'recordingMethod: ${point.recordingMethod}, '
+          'sourceName: ${point.sourceName}, '
+          'sourceId: ${point.sourceId}, '
+          'sourceDeviceId: ${point.sourceDeviceId}',
+        );
+      }
+
       final numericValue = _extractNumericValue(point);
 
       switch (point.type) {
@@ -326,5 +352,13 @@ class HealthRepositoryImpl implements HealthRepository {
       return kHealthDataTypesIOS;
     }
     return kHealthDataTypesAndroid;
+  }
+
+  /// Permission access levels aligned to [_platformTypes] order.
+  /// Steps are requested as READ_WRITE to allow deletion.
+  List<HealthDataAccess> get _platformAccesses {
+    return _platformTypes
+        .map((type) => type == HealthDataType.STEPS ? HealthDataAccess.READ_WRITE : HealthDataAccess.READ)
+        .toList();
   }
 }
