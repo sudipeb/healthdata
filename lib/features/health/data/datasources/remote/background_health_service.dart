@@ -14,15 +14,12 @@ import 'dart:async';
 import 'dart:io' show Platform;
 
 import 'package:health/health.dart';
-
-import '../../core/constants/health_constants.dart';
-import '../../core/utils/logger.dart';
-import '../../domain/models/health_summary.dart';
+import 'package:healthdata/core/constants/health_constants.dart';
+import 'package:healthdata/core/utils/logger.dart';
+import 'package:healthdata/features/health/domain/models/health_summary.dart';
 
 class BackgroundHealthService {
-  BackgroundHealthService({
-    this.syncInterval = const Duration(minutes: 15),
-  });
+  BackgroundHealthService({this.syncInterval = const Duration(minutes: 15)});
 
   /// How often to re-fetch data from the platform health store.
   final Duration syncInterval;
@@ -258,6 +255,5 @@ class BackgroundHealthService {
     return null;
   }
 
-  List<HealthDataType> get _platformTypes =>
-      Platform.isIOS ? kHealthDataTypesIOS : kHealthDataTypesAndroid;
+  List<HealthDataType> get _platformTypes => Platform.isIOS ? kHealthDataTypesIOS : kHealthDataTypesAndroid;
 }

@@ -17,11 +17,10 @@ library;
 import 'dart:io' show Platform;
 
 import 'package:health/health.dart';
-
-import '../../core/constants/health_constants.dart';
-import '../../core/utils/logger.dart';
-import '../../domain/models/health_summary.dart';
-import '../../domain/repositories/health_repository.dart';
+import 'package:healthdata/core/constants/health_constants.dart';
+import 'package:healthdata/core/utils/logger.dart';
+import 'package:healthdata/features/health/domain/models/health_summary.dart';
+import 'package:healthdata/features/health/domain/repositories/health_repository.dart';
 
 class HealthRepositoryImpl implements HealthRepository {
   HealthRepositoryImpl() {

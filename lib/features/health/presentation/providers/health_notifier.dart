@@ -12,18 +12,18 @@ library;
 import 'dart:async';
 
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:healthdata/core/utils/logger.dart';
+import 'package:healthdata/features/health/data/datasources/remote/background_health_service.dart';
+import 'package:healthdata/features/health/domain/models/date_range_option.dart';
+import 'package:healthdata/features/health/domain/models/health_summary.dart';
+import 'package:healthdata/features/health/domain/repositories/health_repository.dart';
 
-import '../../core/utils/logger.dart';
-import '../../data/services/background_health_service.dart';
-import '../../domain/models/date_range_option.dart';
-import '../../domain/models/health_summary.dart';
-import '../../domain/repositories/health_repository.dart';
 import 'health_state.dart';
 
 class HealthCubit extends Cubit<HealthState> {
   HealthCubit(this._repository, {BackgroundHealthService? backgroundHealthService})
-      : _backgroundHealthService = backgroundHealthService ?? BackgroundHealthService(),
-        super(const HealthState());
+    : _backgroundHealthService = backgroundHealthService ?? BackgroundHealthService(),
+      super(const HealthState());
 
   final HealthRepository _repository;
   final BackgroundHealthService _backgroundHealthService;

@@ -9,10 +9,10 @@ library;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import 'core/utils/logger.dart';
-import 'data/repositories/health_repository_impl.dart';
-import 'presentation/providers/health_notifier.dart';
-import 'presentation/screens/health_dashboard_screen.dart';
+import 'package:healthdata/core/utils/logger.dart';
+import 'package:healthdata/features/health/data/repositories/health_repository_impl.dart';
+import 'package:healthdata/features/health/presentation/pages/health_dashboard_screen.dart';
+import 'package:healthdata/features/health/presentation/providers/health_notifier.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();

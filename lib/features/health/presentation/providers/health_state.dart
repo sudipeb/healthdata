@@ -7,9 +7,9 @@
 /// ──────────────────────────────────────────────────────────────────────────────
 library;
 
-import '../../domain/models/date_range_option.dart';
-import '../../domain/models/health_summary.dart';
-import '../../domain/repositories/health_repository.dart';
+import 'package:healthdata/features/health/domain/models/date_range_option.dart';
+import 'package:healthdata/features/health/domain/models/health_summary.dart';
+import 'package:healthdata/features/health/domain/repositories/health_repository.dart';
 
 /// Describes the overall status of the health screen.
 enum HealthScreenStatus {
